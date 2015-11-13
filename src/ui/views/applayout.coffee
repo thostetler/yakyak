@@ -1,5 +1,6 @@
 
 {throttle, topof} = require '../util'
+messages = require './messages'
 
 attached = false
 attachListeners = ->
@@ -8,12 +9,16 @@ attachListeners = ->
     window.addEventListener 'click', onActivity
     window.addEventListener 'keydown', onActivity
     window.addEventListener 'keydown', noInputKeydown
+    window.addEventListener 'focus', onFocus
 
 onActivity = throttle 100, (ev) ->
     action 'activity', ev.timeStamp ? Date.now()
 
 noInputKeydown = (ev) ->
     action 'noinputkeydown', ev if ev.target.tagName != 'TEXTAREA'
+
+onFocus = (ev) ->
+    messages.scrollToBottom()
 
 onScroll = throttle 20, (ev) ->
     el = ev.target
