@@ -34,7 +34,7 @@ templateOsx = (viewstate) -> [{
     label: 'View'
     submenu: [
         {
-            type:'checkbox'
+            type: 'checkbox'
             label: 'Show Conversation Thumbnails'
             checked:viewstate.showConvThumbs
             enabled: viewstate.loggedin
@@ -43,14 +43,6 @@ templateOsx = (viewstate) -> [{
             label: 'Toggle Full Screen',
             accelerator: 'Command+Control+F',
             click: -> action 'togglefullscreen'
-        }, {
-            label: 'Previous Conversation',
-            enabled: viewstate.loggedin
-            click: -> action 'selectNextConv', -1
-        }, {
-            label: 'Next Conversation',
-            enabled: viewstate.loggedin
-            click: -> action 'selectNextConv', +1
         }, {
             # seee https://github.com/atom/electron/issues/1507
             label: 'Zoom In',
@@ -64,6 +56,30 @@ templateOsx = (viewstate) -> [{
             label: 'Reset Zoom',
             accelerator: 'Command+0',
             click: -> action 'zoom'
+        }, {
+            type: 'separator'
+        }, {
+            label: 'Previous Conversation',
+            enabled: viewstate.loggedin
+            click: -> action 'selectNextConv', -1
+        }, {
+            label: 'Next Conversation',
+            enabled: viewstate.loggedin
+            click: -> action 'selectNextConv', +1
+        }, {
+            type: 'separator'
+        }, {
+            label: 'Show tray icon'
+            type: 'checkbox'
+            enabled: not viewstate.hidedockicon
+            checked:  viewstate.showtray
+            click: -> action 'toggleshowtray'
+        }, {
+            label: 'Hide Dock icon'
+            type: 'checkbox'
+            enabled: viewstate.showtray
+            checked:  viewstate.hidedockicon
+            click: -> action 'togglehidedockicon'
         }
     ]},{
     label: 'Window',
@@ -95,8 +111,6 @@ templateOthers = (viewstate) -> [{
     submenu: [
         { label: 'Open Inspector', accelerator: 'Control+Alt+I', click: -> action 'devtools' }
         { type: 'separator' }
-        { type:'checkbox', label: 'Keep running in the system tray when closed', checked: viewstate.minimizeToTray, click: (it) -> action 'minimizetotray', it.checked }
-        { type:'checkbox', label: 'Start minimized in the system tray', checked: viewstate.startMinimized, click: (it) -> action 'startminimized', it.checked }
         { type: 'separator' }
         {
           label: 'Logout',
@@ -118,16 +132,6 @@ templateOthers = (viewstate) -> [{
             accelerator: 'Control+Alt+F',
             click: -> action 'togglefullscreen'
         }, {
-            label: 'Previous Conversation',
-            accelerator: 'Control+K',
-            click: -> action 'selectNextConv', -1
-            enabled: viewstate.loggedin
-        }, {
-            label: 'Next Conversation',
-            accelerator: 'Control+J',
-            click: -> action 'selectNextConv', +1
-            enabled: viewstate.loggedin
-        }, {
             # seee https://github.com/atom/electron/issues/1507
             label: 'Zoom In',
             accelerator: 'Control+Plus',
@@ -140,6 +144,26 @@ templateOthers = (viewstate) -> [{
             label: 'Reset Zoom',
             accelerator: 'Control+0',
             click: -> action 'zoom'
+        }, {
+          type: 'separator'
+        }, {
+            label: 'Previous Conversation',
+            accelerator: 'Control+K',
+            click: -> action 'selectNextConv', -1
+            enabled: viewstate.loggedin
+        }, {
+            label: 'Next Conversation',
+            accelerator: 'Control+J',
+            click: -> action 'selectNextConv', +1
+            enabled: viewstate.loggedin
+        }, {
+          type: 'separator'
+        }, {
+            label: 'Show tray icon'
+            type: 'checkbox'
+            enabled: not viewstate.hidedockicon
+            checked:  viewstate.showtray
+            click: -> action 'toggleshowtray'
         }
     ]}
 ]

@@ -5,8 +5,6 @@ ipc    = require 'ipc'
 {entity, conv, viewstate, userinput, connection, convsettings, notify} = require './models'
 {throttle, later, isImg} = require './util'
 
-config = new(require './config')
-
 'connecting connected connect_failed'.split(' ').forEach (n) ->
     handle n, -> connection.setState n
 
@@ -90,7 +88,23 @@ handle 'sendmessage', (txt) ->
     ipc.send 'sendchatmessage', msg
     conv.addChatMessagePlaceholder entity.self.id, msg
 
+handle 'toggleshowtray', ->
+    viewstate.setShowTray(not viewstate.showtray)
 
+handle 'togglehidedockicon', ->
+    viewstate.setHideDockIcon(not viewstate.hidedockicon)
+
+handle 'togglewindow', ->
+    mainWindow = remote.getCurrentWindow() # And we hope we don't get another ;)
+    if mainWindow.isVisible() then mainWindow.hide() else mainWindow.show()
+
+handle 'togglestartminimizedtotray', ->
+    viewstate.setStartMinimizedToTray(not viewstate.startminimizedtotray)
+
+handle 'showwindow', ->
+    mainWindow = remote.getCurrentWindow() # And we hope we don't get another ;)
+    mainWindow.show()
+  
 sendsetpresence = throttle 10000, ->
     ipc.send 'setpresence'
     ipc.send 'setactiveclient', true, 15
@@ -162,7 +176,7 @@ handle 'uploadingimage', (spec) ->
 
 handle 'leftresize', (size) -> viewstate.setLeftSize size
 handle 'resize', (dim) -> viewstate.setSize dim
-handle 'moved', (pos) -> viewstate.setPosition pos
+handle 'move', (pos) -> viewstate.setPosition pos
 
 handle 'conversationname', (name) ->
     convsettings.setName name
@@ -301,14 +315,6 @@ handle 'unreadtotal', (total, orMore) ->
 handle 'showconvthumbs', (doshow) ->
     viewstate.setShowConvThumbs doshow
 
-handle 'minimizetotray', (value) ->
-    viewstate.setMinimizeToTray value
-    config.set 'minimizetotray', value
-
-handle 'startminimized', (value) ->
-    viewstate.setStartMinimized value
-    config.set 'startminimized', value
-
 handle 'devtools', ->
     remote.getCurrentWindow().openDevTools detach:true
 
@@ -321,7 +327,6 @@ handle 'togglefullscreen', ->
 handle 'zoom', (step) ->
     if step?
         return viewstate.setZoom (parseFloat(document.body.style.zoom) or 1.0) + step
-
     viewstate.setZoom 1
 
 handle 'logout', ->

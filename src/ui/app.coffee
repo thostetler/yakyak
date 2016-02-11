@@ -19,20 +19,9 @@ hr'.split(' '))...
 {applayout}       = require './views'
 {viewstate, conv} = require './models'
 
-config = new(require './config')
-console.log config
-
-# load menu relevant config flags
-config.get 'minimizetotray'
-.then (minimizetotray) ->
-    viewstate.setMinimizeToTray minimizetotray
-    config.get 'startminimized'
-.then (startminimized) ->
-    viewstate.setStartMinimized startminimized
-    # install menu
-    require('./views/menu')(viewstate)
-
-config.set 'test', false
+require('./views/menu')(viewstate)
+if viewstate.startminimizedtotray
+  require('remote').getCurrentWindow().hide()
 
 # tie layout to DOM
 document.body.appendChild applayout.el
@@ -56,7 +45,7 @@ ipc.on 'getentity:result', (r, data) ->
     action 'addentities', r.entities, data?.add_to_conv
 
 ipc.on 'resize', (dim) -> action 'resize', dim
-ipc.on 'moved', (pos)  -> action 'moved', pos
+ipc.on 'move', (pos)  -> action 'move', pos
 ipc.on 'searchentities:result', (r) ->
   action 'setsearchedentities', r.entity
 ipc.on 'createconversation:result', (c, name) ->

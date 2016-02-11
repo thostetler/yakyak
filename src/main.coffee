@@ -6,7 +6,6 @@ fs        = require 'fs'
 path      = require 'path'
 tmp       = require 'tmp'
 clipboard = require 'clipboard'
-Tray      = require 'tray'
 Menu      = require 'menu'
 
 tmp.setGracefulCleanup()
@@ -44,20 +43,7 @@ logout = ->
 
 seqreq = require './seqreq'
 
-saveConfig = ->
-    nconf.save (err) ->
-        console.log 'error while writing config.json', err if err
-
-# Load configuration
-nconf = require 'nconf'
-nconf.file { file: paths.configpath }
-nconf.defaults {
-    'startminimized': false
-    'minimizetotray': false
-}
-
 mainWindow = null
-tray = null
 
 # No more minimizing to tray, just close it
 readyToClose = false
@@ -106,24 +92,9 @@ app.on 'ready', ->
         "min-width": 620
         "min-height": 420
         icon: path.join __dirname, 'icons', 'icon.png'
-        show: !nconf.get 'startminimized'
+        show: true
     }
-
-    # Create the system tray
-    trayIcons = {
-        "read": path.join __dirname, 'icons', 'icon.png'
-        "unread": path.join __dirname, 'icons', 'icon-unread.png'
-    }
-    tray = new Tray trayIcons["read"]
-    contextMenu = Menu.buildFromTemplate [
-        { label: 'Hide/show', click: toggleWindowVisible }
-        { label: 'Quit', click: quit}
-    ]
-    tray.setToolTip 'YakYak - Hangouts client'
-    tray.setContextMenu contextMenu
-
-    # Emitted when the tray icon is clicked
-    tray.on 'clicked', toggleWindowVisible
+    
 
     # and load the index.html of the app. this may however be yanked
     # away if we must do auth.
@@ -134,9 +105,24 @@ app.on 'ready', ->
 
     # callback for credentials
     creds = ->
-        prom = login(mainWindow)
+        console.log "asking for login credentials"
+        loginWindow = new BrowserWindow {
+            width: 730
+            height: 590
+            "min-width": 620
+            "min-height": 420
+            icon: path.join __dirname, 'icons', 'icon.png'
+            show: true
+        }
+        mainWindow.hide()
+        loginWindow.focus()
         # reinstate app window when login finishes
-        prom.then -> loadAppWindow()
+        prom = login(loginWindow)
+        .then (rs) ->
+          loginWindow.forceClose = true
+          loginWindow.close()
+          mainWindow.show()
+          rs
         auth: -> prom
 
     # sends the init structures to the client
@@ -158,7 +144,8 @@ app.on 'ready', ->
     ipc.on 'hangupsConnect', ->
         console.log 'hconnect'
         # first connect
-        reconnect().then ->
+        reconnect()
+        .then ->
             console.log 'connected', reconnectCount
             # on first connect, send init, after that only resync
             if reconnectCount == 0
@@ -174,7 +161,7 @@ app.on 'ready', ->
 
     # client deals with window sizing
     mainWindow.on 'resize', (ev) -> ipcsend 'resize', mainWindow.getSize()
-    mainWindow.on 'moved',  (ev) -> ipcsend 'moved', mainWindow.getPosition()
+    mainWindow.on 'move',  (ev) -> ipcsend 'move', mainWindow.getPosition()
 
     # whenever it fails, we try again
     client.on 'connect_failed', ->
@@ -269,13 +256,6 @@ app.on 'ready', ->
 
     ipc.on 'updatebadge', (ev, value) ->
         app.dock.setBadge(value) if app.dock
-        try 
-          if value > 0
-              tray.setImage trayIcons["unread"]
-          else
-              tray.setImage trayIcons["read"]
-        catch e
-          console.log 'missing icons', e
 
     ipc.on 'searchentities', (ev, query, max_results) ->
         promise = client.searchentities query, max_results
@@ -333,13 +313,6 @@ app.on 'ready', ->
 
     ipc.on 'quit', quit
 
-    ipc.on 'getconfig', (ev, id, key) ->
-        ev.sender.send "returngetconfig", id, nconf.get key
-
-    ipc.on 'setconfig', (ev, key, value) ->
-        nconf.set key, value
-        saveConfig()
-
     # propagate these events to the renderer
     require('./ui/events').forEach (n) ->
         client.on n, (e) ->
@@ -351,11 +324,9 @@ app.on 'ready', ->
 
     # Emitted when the window is about to close.
     # For OSX only hides the window if we're not force closing.
-    # Prevent close, if minimizetotray is enabled.
     mainWindow.on 'close', (ev) ->
-        hideToTray = !readyToClose and nconf.get 'minimizetotray'
         darwinHideOnly = process.platform == 'darwin' and not mainWindow?.forceClose
 
-        if hideToTray or darwinHideOnly
+        if darwinHideOnly
             ev.preventDefault()
             mainWindow.hide()
